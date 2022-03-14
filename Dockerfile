@@ -1,18 +1,20 @@
-FROM node:latest
+# Install the application dependencies in a full UBI Node docker image
+FROM registry.access.redhat.com/ubi8/nodejs-14:latest
 
-# Create app directory
-WORKDIR /usr/src/app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
+# Install app dependencies
+RUN npm install --production
 
-# Bundle app source
-COPY . .
+# Copy the dependencies into a minimal Node.js image
+FROM registry.access.redhat.com/ubi8/nodejs-14-minimal:latest
+
+# Install app dependencies
+COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
+COPY . /opt/app-root/src
+
+ENV NODE_ENV production
 
 EXPOSE 8080
-CMD [ "node", "app.js" ]
+CMD ["node", "app.js"]
